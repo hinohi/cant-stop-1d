@@ -86,7 +86,7 @@ impl Solver {
         if let Some(result) = self.mem.get(&state.pos) {
             return result.clone();
         }
-        let mut s = Expr::linear(0.0, 1.0);
+        let mut s = Expr::constant(1.0);
         for dice in 1..=self.opts.dice {
             s = s + self.dfs_b(state.dice(dice)) / self.dice_n();
         }
@@ -98,13 +98,13 @@ impl Solver {
     fn dfs_b(&mut self, state: State) -> Expr {
         assert!(state.dice.is_some());
         if state.pos >= self.opts.goal {
-            return Expr::linear(0.0, 0.0);
+            return Expr::constant(0.0);
         }
         let stop = self.dfs_a(state.stop());
         let go_success = self.dfs_b(state.go_success());
-        let go_fail = Expr::linear(1.0, 1.0);
+        let go_fail = Expr::self_consistent(1.0) + Expr::constant(1.0);
         let go = go_success / self.dice_n() + go_fail * ((self.dice_n() - 1.0) / self.dice_n());
-        go.min(Expr::linear(0.0, stop))
+        go.min(Expr::constant(stop))
     }
 }
 

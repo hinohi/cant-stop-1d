@@ -16,10 +16,18 @@ pub enum Expr {
 }
 
 impl Expr {
-    pub const fn linear(x: f64, a: f64) -> Expr {
+    pub const fn constant(a: f64) -> Expr {
+        Sum {
+            one: 0.0,
+            zero: a,
+            nonlinear: Vec::new(),
+        }
+    }
+
+    pub const fn self_consistent(x: f64) -> Expr {
         Sum {
             one: x,
-            zero: a,
+            zero: 0.0,
             nonlinear: Vec::new(),
         }
     }
@@ -171,17 +179,27 @@ impl Div<f64> for Expr {
 mod tests {
     use super::*;
 
+    fn linear(x: f64, a: f64) -> Expr {
+        Expr::self_consistent(x) + Expr::constant(a)
+    }
+
     #[test]
     fn eval_linear() {
-        assert_eq!(Expr::linear(0.0, 3.14).eval(-3.0), 3.14);
-        assert_eq!(Expr::linear(1.0, 0.0).eval(3.0), 3.0);
-        assert_eq!(Expr::linear(1.5, 1.0).eval(10.0), 16.0);
-        assert_eq!(Expr::linear(-0.5, 2.0).eval(3.0), 0.5);
+        assert_eq!(Expr::constant(3.456).eval(-3.0), 3.456);
+        assert_eq!(Expr::self_consistent(1.0).eval(3.0), 3.0);
+        assert_eq!(
+            (Expr::self_consistent(1.5) + Expr::constant(1.0)).eval(10.0),
+            16.0
+        );
+        assert_eq!(
+            (Expr::self_consistent(-0.5) + Expr::constant(2.0)).eval(3.0),
+            0.5
+        );
     }
 
     #[test]
     fn eval_min() {
-        let m = Expr::linear(2.0, -1.0).min(Expr::linear(-0.5, 4.0));
+        let m = linear(2.0, -1.0).min(linear(-0.5, 4.0));
         assert_eq!(m.eval(0.0), -1.0);
         assert_eq!(m.eval(1.0), 1.0);
         assert_eq!(m.eval(2.0), 3.0);
@@ -190,9 +208,9 @@ mod tests {
 
     #[test]
     fn bisect() {
-        let f = Expr::linear(0.5, 0.5).min(Expr::linear(0.0, 2.0));
-        let g = Expr::linear(0.4, 1.0).min(Expr::linear(0.0, 3.0));
-        let h = Expr::linear(0.6, 2.0).min(Expr::linear(0.0, 1.5));
+        let f = linear(0.5, 0.5).min(linear(0.0, 2.0));
+        let g = linear(0.4, 1.0).min(linear(0.0, 3.0));
+        let h = linear(0.6, 2.0).min(linear(0.0, 1.5));
         let e = (f + g + h) / 3.0;
         let x = e.bisect();
         assert!((e.eval(x) - x).abs() < 1e-6);
