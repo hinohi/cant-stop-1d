@@ -6,7 +6,7 @@ use clap::Clap;
 
 use crate::expr::Expr;
 
-#[derive(Debug, Clap)]
+#[derive(Debug, Copy, Clone, Clap)]
 struct Opts {
     #[clap(short, long, default_value = "6")]
     dice: u32,
@@ -74,6 +74,13 @@ impl Solver {
         self.dfs_a(State::new(n))
     }
 
+    pub fn strategy(&mut self, n: u32, dice: u32) -> (f64, f64) {
+        let state = State::new(n).dice(dice);
+        let stop_s = self.dfs_a(state.stop());
+        let total_s = self.dfs_b(state).bisect();
+        (total_s, stop_s)
+    }
+
     const fn dice_n(&self) -> f64 {
         self.opts.dice as f64
     }
@@ -114,5 +121,12 @@ fn main() {
     let mut solver = Solver::new(opts);
     for i in 0..goal {
         println!("{} {}", i, solver.solve(i));
+    }
+    for n in 0..goal {
+        print!("{}", n);
+        for d in 1..=opts.dice {
+            print!(" {:?}", solver.strategy(n, d));
+        }
+        println!();
     }
 }
