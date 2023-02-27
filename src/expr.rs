@@ -65,7 +65,7 @@ impl Expr {
         while hi < self.eval(hi) {
             hi *= 2.0;
         }
-        while hi - lo > 1e-12 {
+        while hi - lo > f64::EPSILON * 4.0 {
             let mid = (hi + lo) / 2.0;
             let v = self.eval(mid);
             if v < mid {
