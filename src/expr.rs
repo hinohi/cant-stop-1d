@@ -10,6 +10,7 @@ pub enum Expr {
         nonlinear: Vec<Expr>,
     },
     Min {
+        coef: f64,
         a: Box<Expr>,
         b: Box<Expr>,
     },
@@ -34,6 +35,7 @@ impl Expr {
 
     pub fn min(self, other: Expr) -> Expr {
         Min {
+            coef: 1.0,
             a: Box::new(self),
             b: Box::new(other),
         }
@@ -46,14 +48,10 @@ impl Expr {
                 zero,
                 nonlinear,
             } => *one * x + *zero + nonlinear.iter().map(|e| e.eval(x)).sum::<f64>(),
-            Min { a, b } => {
+            Min { coef, a, b } => {
                 let a = a.eval(x);
                 let b = b.eval(x);
-                if a <= b {
-                    a
-                } else {
-                    b
-                }
+                *coef * a.min(b)
             }
         }
     }
@@ -146,9 +144,10 @@ impl Mul<f64> for Expr {
                 zero: zero * rhs,
                 nonlinear: nonlinear.into_iter().map(|e| e * rhs).collect(),
             },
-            Min { a, b } => Min {
-                a: Box::new(a.mul(rhs)),
-                b: Box::new(b.mul(rhs)),
+            Min { coef, a, b } => Min {
+                coef: coef * rhs,
+                a,
+                b,
             },
         }
     }
@@ -167,9 +166,10 @@ impl Div<f64> for Expr {
                 zero: zero / rhs,
                 nonlinear: nonlinear.into_iter().map(|e| e / rhs).collect(),
             },
-            Min { a, b } => Min {
-                a: Box::new(a.div(rhs)),
-                b: Box::new(b.div(rhs)),
+            Min { coef, a, b } => Min {
+                coef: coef / rhs,
+                a,
+                b,
             },
         }
     }
